@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "BlobAccountName": "203014767teststorage",
+    "BlobAccountKey": "cvpAexnjHYd47ifmDpL9Yk9h/TRGWtLMqPAGIAY1LaEd0j0ylBsvu3VcuEuadj0n4Vg1axIUUJRcmtWfaf+F6A==",
+    "OutBlobContainerName": "mtucleaned",
+    "OutBlobContainerGEName": "gecleaned",
+    "OutBlobPoMatch": "pomatch",
+    "OutBlobPoMatchFormatted":"pomatchformatted",
+    "OutBlobFinal":"finalmatch"
+  },
+  "ConnectionStrings": {}
+}
