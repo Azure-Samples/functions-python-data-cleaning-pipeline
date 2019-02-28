@@ -10,7 +10,6 @@ from io import StringIO
 # source funcenv/bin/activate... this activates virtual environment created above
 # func host start after each change
 # pip install -r requirements.txt
-#
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
@@ -19,103 +18,82 @@ block_blob_service = BlockBlobService(account_name=blob_account_name,
 out_blob_container_name = os.getenv("OutBlobContainerName")
 out_blob_container_ge_name = os.getenv("OutBlobContainerGEName")
 out_blob_pomatch = os.getenv("OutBlobPoMatchFormatted")
+out_blob_final = os.getenv("OutBlobFinal")
 # Clean blob flow from event grid events
 # This function will call all the other functions in clean.py
 def clean(req_body):
-    formatted_df = categorize_PO_format_in_customer_file(out_blob_container_name,out_blob_container_ge_name)
-    #formatted_df = format_total_blob(po_match_df)
-    #formatted_ge_df = format_ge_blob(ge_df)
-    result = format_cleaned_customer_file(formatted_df)
-    return result
+    MTU_df, GE_df = fetch_blobs(out_blob_container_name,out_blob_container_ge_name)
+    cleaned_df = determine_PO_format(MTU_df, GE_df)
+    result = final_reconciliation(cleaned_df, GE_df)
+    return 'Success'
 
-# Reconcile GE and Customer Files
-# Reconcile GE and Customer Files
-def categorize_PO_format_in_customer_file(out_blob_container_name,out_blob_container_ge_name):
-    # This function will add the PO Format Category to the Customer File
-    # Get the blob names in the MTU blob and read in the latest to a df
-    generator = block_blob_service.list_blobs(out_blob_container_name)
-    MTU_blob_file = []
-    for blob in generator:
-        print("\t Blob name: " + blob.name)  
-        MTU_blob_file.append(blob.name)
-    logging.warning('MTU Reconciliation')
-    MTU_blob_latest_file = MTU_blob_file[-1]
+def extract_blob_props(container,filename_list):
+    latest_file = filename_list[-1]
     # Need to convert the list to a string for it to work with the python Azure SDK methods below
-    ''.join([str(i) for i in MTU_blob_latest_file])
-    logging.info(MTU_blob_latest_file)
-    
-    # Convert Customer Blob File to DF
-    #https://stackoverflow.com/questions/33091830/how-best-to-convert-from-azure-blob-csv-format-to-pandas-dataframe-while-running
-    MTU_blobstring = block_blob_service.get_blob_to_text(out_blob_container_name,MTU_blob_latest_file).content
-    MTU_df = pd.read_csv(StringIO(MTU_blobstring),dtype={'PurchDoc': object,'Invoice No.': object,'Item': object,
-         'GE_PO_#': object, 'MTU_PO_#': object})
+    ''.join([str(i) for i in latest_file])
+    logging.warning(latest_file)
+    blobstring = block_blob_service.get_blob_to_text(container, latest_file).content
+    df = pd.read_csv(StringIO(blobstring),dtype=str)
+    return df
+
+def fetch_blobs(out_blob_container_name,out_blob_container_ge_name):
+    # This function will get the blobs and read them into dataframes
+    mtu_generator = block_blob_service.list_blobs(out_blob_container_name)
+    ge_generator = block_blob_service.list_blobs(out_blob_container_ge_name)
+    # this is a generator object and now we need to get the file name
+    logging.warning(mtu_generator)
+
+    # Create Customer DF
+    MTU_blob_file = []
+    for blob in mtu_generator:
+        MTU_blob_file.append(blob.name)
+    MTU_df = extract_blob_props(out_blob_container_name,MTU_blob_file)
     logging.info(MTU_df.head(5))
     logging.info(MTU_df.dtypes)   
-    logging.info(len(MTU_df.index))
-    # convert column to be matched to GE_df to string
-    #MTU_df['GE_PO_#'] = MTU_df['GE_PO_#'].astype(str)
+    logging.warning(len(MTU_df.index))
 
-    # Kick off GE Process... same as above
-    logging.warning('GE Reconciliation')
-    generator_ge = block_blob_service.list_blobs(out_blob_container_ge_name)
-    GE_blob_file = []
-    for blob in generator_ge:
-        print("\t Blob name: " + blob.name)  
-        GE_blob_file.append(blob.name)
-    GE_blob_latest_file = GE_blob_file[-1]
-    # Need to convert the list to a string for it to work with the python Azure SDK methods below
-    ''.join([str(i) for i in GE_blob_latest_file])
-    logging.info(GE_blob_latest_file)
-    GE_blobstring = block_blob_service.get_blob_to_text(out_blob_container_ge_name,GE_blob_latest_file).content
-    GE_df = pd.read_csv(StringIO(GE_blobstring))
-    # Need to drop duplicates or you will get more rows than the initial customer DF has.
-    GE_df = GE_df.drop_duplicates(subset='Customer PO #')
- 
+    ### Create GE DF
+    ge_blob_file = []
+    for ge_file in ge_generator:
+        ge_blob_file.append(ge_file.name)
+        logging.warning(ge_blob_file)
+        GE_df = extract_blob_props(out_blob_container_ge_name,ge_blob_file)
     logging.info(GE_df.head(5))
-    logging.info(GE_df.dtypes)
-    logging.info(len(GE_df.index))
-       
+    logging.info(GE_df.dtypes)   
+    logging.warning(len(GE_df.index))
+    return MTU_df, GE_df
+
+def determine_PO_format(MTU_df, GE_df):
     ## We need to check the GE file for POs in the GE Format and the MTU Format
     ## First, let's left match on MTU df to GE PO Format
+    GE_df = GE_df.drop_duplicates(subset='Customer PO #')
+    logging.warning('**************MTU_DF_LEN')      
+    logging.warning(len(MTU_df.index))
     PO_Match_1_df = MTU_df.merge(GE_df.drop_duplicates(), on='GE_PO_#', how='left', indicator='PO_Match_GE')
-    logging.info(PO_Match_1_df.dtypes)
+    logging.warning('**************PO_Match_1_df')      
+    logging.warning(len(PO_Match_1_df.index))
     # Both means we have a match between each df.  Let's rename 'both' to 'GE_PO_Format'
     PO_Match_1_df['PO_Match_GE'] = PO_Match_1_df['PO_Match_GE'].str.replace('both','GE_PO_Format')
-    #outcsv_po = PO_Match_1_df.to_csv(index=False)
-    #blob_file_name = "po_match_on_GE_PO_Format"
-    #block_blob_service.create_blob_from_text(out_blob_pomatch, blob_file_name , outcsv_po)
-    
     ## Next, lets left match check to see if any MTU POs match the GE file
     ## We will keep our progress from rows that we matched to the GE format in the PO_Match_1_df above.
     # We just matched the GE PO in the previous step, so we can drop that column now.
     # The GE_PO_# is just an extra column that we copied the PO column from the GE df in order to do a left join.
     GE_df.drop(['GE_PO_#'], axis=1, inplace = True)
     # Create MTU PO Column in GE df for merge
+    logging.info(PO_Match_1_df.dtypes)
     GE_df['MTU_PO_#'] = GE_df['Customer PO #']
-    PO_Match_2_df = PO_Match_1_df.merge(GE_df.drop_duplicates(), on='MTU_PO_#',
+    cleaned_df = PO_Match_1_df.merge(GE_df.drop_duplicates(), on='MTU_PO_#',
         how='left', indicator='PO_Match_MTU')
+    logging.warning('**************cleaned_df')      
+    logging.warning(len(cleaned_df.index))
     # Rename to ensure we can see GE vs MTU PO Match
-    PO_Match_2_df['PO_Match_MTU'] = PO_Match_2_df['PO_Match_MTU'].str.replace('both','MTU_PO_Format')
-    #outcsv_po = PO_Match_2_df.to_csv(index=False)
-    #blob_file_name = "po_match_on_MTU_PO_Format"
-    #block_blob_service.create_blob_from_text(out_blob_pomatch, blob_file_name , outcsv_po)
-    #cleaned_df = format_total_blob(PO_Match_2_df)
+    cleaned_df['PO_Match_MTU'] = cleaned_df['PO_Match_MTU'].str.replace('both','MTU_PO_Format')
     drop = ['Gross Sales_y','ESN_y','Invoice Number_y','Order #_y','Customer PO #_y',
         'Gross Sales_x','ESN_x','Invoice Number_x','Order #_x','Customer PO #_x', 
         'PO_Inv_Price_Match_x','PO_Price_Match_x','PO_Inv_Price_Match_y','PO_Price_Match_y']
-    PO_Match_2_df.drop(drop, axis=1, inplace = True)
-    logging.info(PO_Match_2_df.dtypes)
-    #format_ge_blob(GE_df)
-
-    #outcsv = PO_Match_2_df.to_csv(index=False)
-    #blob_file_name = "cleaned_PO_Match.csv"
-    #block_blob_service.create_blob_from_text(out_blob_pomatch, blob_file_name, outcsv)
-    return PO_Match_2_df
-
-def format_cleaned_customer_file(df):
-    #logging.info(content)
-    cleaned_df = df
-    #Lets add a column that shows the final PO category that reconciled
+    cleaned_df.drop(drop, axis=1, inplace = True)
+    logging.info(cleaned_df.dtypes)
+    # #Lets add a column that shows the final PO category that reconciled
     PO_result = []
     for index, row in cleaned_df.iterrows():
         if row['PO_Match_GE'] == 'GE_PO_Format':
@@ -124,8 +102,8 @@ def format_cleaned_customer_file(df):
             PO_result.append('MTU_PO_Format')
         else:
             PO_result.append('no_match')
-
-    # Update cleaned_df column with list of categories created above.       
+    
+        # Update cleaned_df column with list of categories created above.       
     cleaned_df['PO_Format'] = PO_result
     # Lets add a column that shows the final PO # that reconciled
     mask = cleaned_df['PO_Match_GE'] == 'GE_PO_Format'
@@ -136,9 +114,7 @@ def format_cleaned_customer_file(df):
     cleaned_df.loc[mask,'Final_PO'] = cleaned_df.loc[mask,'MTU_PO_#']
     
     # Remember, the cleaned_df is joined on the MTU dataframe and contains the final_PO Category
-    # 
     # https://pandas.pydata.org/pandas-docs/stable/cookbook.html
-
     # Create column for PO + Price Match
     cleaned_df['PO_Price_Match'] = (cleaned_df['Final_PO'].astype(str) +"_"+ cleaned_df['SignedInvVal'].astype(str))
     
@@ -154,8 +130,54 @@ def format_cleaned_customer_file(df):
 
     drop = ['PO_Match_MTU','PO_Match_GE']
     cleaned_df.drop(drop, axis=1, inplace = True)
-    outcsv = cleaned_df.to_csv(index=False)
-    blob_file_name = "Customer_Cleaned_PO_Match.csv"
+    # return MTU df with PO match info
+    return cleaned_df
+
+def final_reconciliation(cleaned_df, GE_df):    
+    # GE_df is much larger than customer df, so we need to drop any duplicates of the columns we are merging on.
+    GE_df = GE_df.drop_duplicates(subset='PO_Inv_Price_Match')
+    GE_df = GE_df.drop_duplicates(subset='PO_Price_Match')
+    GE_level_1 = GE_df.loc[:, ['PO_Inv_Price_Match']]
+    outcsv = GE_level_1.to_csv(index=False)
+    blob_file_name = "GE_Final_File Level 1.csv"
     block_blob_service.create_blob_from_text(out_blob_pomatch, blob_file_name, outcsv)
-    return "Success"
+    GE_level_2 = GE_df.loc[:, ['PO_Price_Match']]
     
+    Level_1_df = cleaned_df.merge(GE_level_1.drop_duplicates(), on=['PO_Inv_Price_Match'], 
+                   how='left', indicator='level_1')
+    logging.warning('**************CLEANED_DF_LEN')      
+    logging.warning(len(cleaned_df.index))
+    Level_1_df['level_1'] = Level_1_df['level_1'].str.replace('both','level_1_match')
+    logging.info(Level_1_df.head(5))
+    logging.info(Level_1_df.dtypes)
+    logging.warning(len(Level_1_df.index))
+    outcsv = Level_1_df.to_csv(index=False)
+    blob_file_name = "Level_1_Match.csv"
+    block_blob_service.create_blob_from_text(out_blob_pomatch, blob_file_name, outcsv)
+
+    Level_2_df = Level_1_df.merge(GE_level_2.drop_duplicates(), on=['PO_Price_Match'], 
+                   how='left', indicator='level_2')
+    Level_2_df['level_2'] = Level_2_df['level_2'].str.replace('both','level_2_match')
+
+    # Create a final column to show the match status
+    final_result = []
+    for index, row in Level_2_df.iterrows():
+        if row['level_1'] == 'level_1_match':
+            final_result.append('PO_Inv_Price_Match')
+        elif row['level_1'] == 'left_only':
+            if row['level_2'] == 'level_2_match':
+                final_result.append('PO_Price_Match')
+            else:
+                final_result.append('no_match')
+        else:
+            final_result.append('mismatch')
+    Level_2_df['final_result'] = final_result
+    logging.warning('******* Final_DF*************')
+    logging.warning(len(Level_2_df.index))
+    #https://chrisalbon.com/python/data_wrangling/pandas_create_column_with_loop/
+        #drop = ['PO_Match_MTU','PO_Match_GE']
+    #cleaned_df.drop(drop, axis=1, inplace = True)
+    outcsv = Level_2_df.to_csv(index=False)
+    blob_file_name = "Final_Matched_File.csv"
+    block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, outcsv)
+    return "Success"
