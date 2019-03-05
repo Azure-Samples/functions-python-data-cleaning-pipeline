@@ -4,6 +4,7 @@ import pandas as pd
 from azure.storage.blob import ContentSettings
 from azure.storage.blob import BlockBlobService
 from io import StringIO
+from . import fetch_blob as fetching_service
 #ce4d996051a1005da9245562212cb070efdba9d2
 
 #python3.6 -m venv funcenv... this creates the funcenv
@@ -27,40 +28,23 @@ def clean(req_body):
     result = final_reconciliation(cleaned_df, GE_df)
     return 'Success'
 
-def extract_blob_props(container,filename_list):
-    latest_file = filename_list[-1]
-    # Need to convert the list to a string for it to work with the python Azure SDK methods below
-    ''.join([str(i) for i in latest_file])
-    logging.warning(latest_file)
-    blobstring = block_blob_service.get_blob_to_text(container, latest_file).content
-    df = pd.read_csv(StringIO(blobstring),dtype=str)
-    return df
-
 def fetch_blobs(out_blob_container_name,out_blob_container_ge_name):
-    # This function will get the blobs and read them into dataframes
-    mtu_generator = block_blob_service.list_blobs(out_blob_container_name)
-    ge_generator = block_blob_service.list_blobs(out_blob_container_ge_name)
-    # this is a generator object and now we need to get the file name
-    logging.warning(mtu_generator)
-
-    # Create Customer DF
-    MTU_blob_file = []
-    for blob in mtu_generator:
-        MTU_blob_file.append(blob.name)
-    MTU_df = extract_blob_props(out_blob_container_name,MTU_blob_file)
-    logging.info(MTU_df.head(5))
-    logging.info(MTU_df.dtypes)   
-    logging.warning(len(MTU_df.index))
-
-    ### Create GE DF
-    ge_blob_file = []
-    for ge_file in ge_generator:
-        ge_blob_file.append(ge_file.name)
-        logging.warning(ge_blob_file)
-        GE_df = extract_blob_props(out_blob_container_ge_name,ge_blob_file)
+    # Create container & blob dictionary with helper function
+    blob_dict = fetching_service.blob_to_dict(out_blob_container_name, out_blob_container_ge_name)
+    
+    # create GE DF
+    filter_string = 'ge'
+    GE_df = fetching_service.blob_dict_to_df(blob_dict, filter_string)
     logging.info(GE_df.head(5))
     logging.info(GE_df.dtypes)   
     logging.warning(len(GE_df.index))
+
+    # Create MTU df
+    filter_string = 'mtu'
+    MTU_df = fetching_service.blob_dict_to_df(blob_dict, filter_string)
+    logging.info(MTU_df.head(5))
+    logging.info(MTU_df.dtypes)   
+    logging.warning(len(MTU_df.index))
     return MTU_df, GE_df
 
 def determine_PO_format(MTU_df, GE_df):
@@ -123,10 +107,6 @@ def determine_PO_format(MTU_df, GE_df):
     # Create column for PO + Inv + Price Match
     cleaned_df['PO_Inv_Price_Match'] = (cleaned_df['Final_PO'].astype(str) +"_"+ cleaned_df['Invoice No.'].astype(str) 
                                   +"_"+ cleaned_df['SignedInvVal'].astype(str))         
-    
-    #drop = ['Gross Sales_y','ESN_y','Invoice Number_y','Order #_y','Customer PO #_y',
-    #        'Gross Sales_x','ESN_x','Invoice Number_x','Order #_x','Customer PO #_x']
-    #cleaned_df.drop(drop, axis=1, inplace = True)
 
     drop = ['PO_Match_MTU','PO_Match_GE']
     cleaned_df.drop(drop, axis=1, inplace = True)
@@ -175,9 +155,10 @@ def final_reconciliation(cleaned_df, GE_df):
     logging.warning('******* Final_DF*************')
     logging.warning(len(Level_2_df.index))
     #https://chrisalbon.com/python/data_wrangling/pandas_create_column_with_loop/
-        #drop = ['PO_Match_MTU','PO_Match_GE']
-    #cleaned_df.drop(drop, axis=1, inplace = True)
+    drop = ['Item_3','GE_PO_#','MTU_PO_#','file_name_x','file_name_y','file_name','level_1','level_2']
+    Level_2_df.drop(drop, axis=1, inplace = True)
     outcsv = Level_2_df.to_csv(index=False)
     blob_file_name = "Final_Matched_File.csv"
     block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, outcsv)
-    return "Success"
+    return Level_2_df
+
