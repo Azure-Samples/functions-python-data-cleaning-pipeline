@@ -68,6 +68,9 @@ def populate_workbench(dfCreate):
         try:
             logging.warning(dfCreate.iloc[index])
             payload = make_create_payload(dfCreate,index)
+            outjson = payload
+            blob_file_name = "df_to_json.json"
+            block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, outjson)
             #logging.warning(payload)
             resp = create_contract(workflowId,contractCodeId,connectionId,payload)
             createdContracts.append(resp.text)
@@ -87,34 +90,31 @@ def make_create_payload(df,index):
             "workflowActionParameters": [
                 {
                     "name": "po",
-                    "value": df['po'][index]
+                    "value": df['PO'][index]
                 }, {
                     "name": "itemno",
-                    "value": df['itemno'][index]
+                    "value": df['ItemNo'][index]
                 }, {
                     "name": "invno",
-                    "value": df['invno'][index]
+                    "value": df['InvNo'][index]
                 }, {
                     "name": "signedinvval",
-                    "value": df['signedinvval'][index]
+                    "value": df['SignedInvVal'][index]
                 }, {
                     "name": "invdate",
-                    "value": df['invdate'][index]
+                    "value": df['InvDate'][index]
                 }, {
                     "name": "poformat",
-                    "value": df['poformat'][index]
-                }, {
-                    "name": "finalpo",
-                    "value": df['finalpo'][index]
+                    "value": df['PO_Format'][index]
                 }, {
                     "name": "popricematch",
-                    "value": df['popricematch'][index]
+                    "value": df['PO_Price_Match'][index]
                 }, {
                     "name": "poinvpricematch",
-                    "value": df['poinvpricematch'][index]
+                    "value": df['PO_Inv_Price_Match'][index]
                 }, {
                     "name": "finalresult",
-                    "value": df['finalresult'][index]
+                    "value": df['final_result'][index]
                 }
             ]
         }
