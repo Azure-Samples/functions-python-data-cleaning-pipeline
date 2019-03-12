@@ -11,6 +11,9 @@ from . import fetch_blob as fetching_service
 # source funcenv/bin/activate... this activates virtual environment created above
 # func host start after each change
 # pip install -r requirements.txt
+# pip freeze > requirements.txt
+# func azure functionapp <app name> --build-native-deps
+# 203014767$ func azure functionapp publish 203014767Reconciliation --build-native-deps  --no-bundler
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
@@ -155,10 +158,12 @@ def final_reconciliation(cleaned_df, GE_df):
     logging.warning('******* Final_DF*************')
     logging.warning(len(Level_2_df.index))
     #https://chrisalbon.com/python/data_wrangling/pandas_create_column_with_loop/
-    drop = ['Item_3','GE_PO_#','MTU_PO_#','file_name_x','file_name_y','file_name','level_1','level_2']
+    drop = ['Item_3','GE_PO_#','MTU_PO_#','file_name_x','file_name_y','file_name','level_1','level_2','PurchDoc_8']
     Level_2_df.drop(drop, axis=1, inplace = True)
+    Level_2_df.rename(columns={'PurchDoc': 'PO', 'Item': 'ItemNo', 
+    'Invoice No.': 'InvNo', 'IV-Date': 'InvDate'}, inplace=True)
+    logging.warning(Level_2_df.dtypes)
     outcsv = Level_2_df.to_csv(index=False)
     blob_file_name = "Final_Matched_File.csv"
     block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, outcsv)
     return Level_2_df
-
