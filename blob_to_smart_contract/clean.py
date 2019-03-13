@@ -2,6 +2,7 @@
 import logging
 import requests
 import json
+import numpy as np
 import os
 import pandas as pd
 from azure.storage.blob import ContentSettings
@@ -49,7 +50,8 @@ auth_context = AuthenticationContext(AUTHORITY)
 def clean(req_body):
     dfCreate = fetch_blobs(out_blob_final)
     #create_contract(14, 14, 1, testPayload3b)
-    populate_workbench(dfCreate)
+    json_array= populate_workbench(dfCreate)
+    result = create_json_blob(json_array)
     return 'Success'
 #%%
 # Read/process CSV into pandas df
@@ -59,72 +61,86 @@ def fetch_blobs(out_blob_final):
     # create DF
     filter_string = "final"
     df = fetching_service.blob_dict_to_df(blob_dict, filter_string)
-    logging.info(df.head())
+    logging.info(df.dtypes)
     return df
 #%%
 def populate_workbench(dfCreate):
+    json_array = []
     #logging.warning(dfCreate.head())    
     for index, row in dfCreate.iterrows():
         try:
-            logging.warning(dfCreate.iloc[index])
+            #logging.warning(dfCreate.iloc[index])
             payload = make_create_payload(dfCreate,index)
-            outjson = payload
-            blob_file_name = "df_to_json.json"
-            block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, outjson)
+            json_array+=[payload]
             #logging.warning(payload)
-            resp = create_contract(workflowId,contractCodeId,connectionId,payload)
-            createdContracts.append(resp.text)
+            #resp = create_contract(workflowId,contractCodeId,connectionId,payload)
+            #createdContracts.append(resp.text)
         except:
             print('contract creation failed')
             continue
+    #logging.warning(payload)
+    return json_array
 #%%
 def make_create_payload(df,index):
     # This function generates the payload json fed from the pandas df
-    logging.warning(df)
+    #logging.warning(df)
     #need to update this value
     workflowFunctionId = 93
     try:
-        logging.warning('Creating payload...\n')
+        #logging.warning('Creating payload...\n')
         payload = {
             "workflowFunctionId": workflowFunctionId,
             "workflowActionParameters": [
                 {
                     "name": "po",
-                    "value": df['PO'][index]
+                    "value": df['po'][index]
                 }, {
                     "name": "itemno",
-                    "value": df['ItemNo'][index]
+                    "value": df['itemno'][index]
                 }, {
                     "name": "invno",
-                    "value": df['InvNo'][index]
+                    "value": df['invno'][index]
                 }, {
                     "name": "signedinvval",
-                    "value": df['SignedInvVal'][index]
+                    "value": df['signedinval'][index]
                 }, {
                     "name": "invdate",
-                    "value": df['InvDate'][index]
+                    "value": df['invdate'][index]
                 }, {
                     "name": "poformat",
-                    "value": df['PO_Format'][index]
+                    "value": df['poformat'][index]
                 }, {
                     "name": "popricematch",
-                    "value": df['PO_Price_Match'][index]
+                    "value": df['popricematch'][index]
                 }, {
                     "name": "poinvpricematch",
-                    "value": df['PO_Inv_Price_Match'][index]
+                    "value": df['poinvpricematch'][index]
+                }, {
+                    "name": "initstate",
+                    "value": df['initstate'][index]
+                }, {
+                    "name": "finalpo",
+                    "value": df['finalpo'][index]
                 }, {
                     "name": "finalresult",
-                    "value": df['final_result'][index]
+                    "value": df['finalresult'][index]
                 }
             ]
         }
-        payload = json.dumps(payload)
-        logging.warning('payload')
-        logging.warning(payload)
+        #payload = json.dumps(payload)
+        #logging.warning('payload')
+        #logging.warning(payload)
         return payload
     except:
         logging.warning('error in payload')
 
+def create_json_blob(json_array):
+    #outjson = json_array
+    #myarray = np.asarray(json_array).tolist()
+    myarray = pd.Series(json_array).to_json(orient='values')
+    blob_file_name = "df_to_json.json"
+    block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, myarray)
+    return 'Success'
 #%%
 #testPayload3b = json.dumps(testPayload3)
 createdContracts = []

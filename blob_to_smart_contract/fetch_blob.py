@@ -2,6 +2,7 @@ import logging
 import os
 import collections
 import pandas as pd
+import numpy as np
 from azure.storage.blob import ContentSettings
 from azure.storage.blob import BlockBlobService
 from io import StringIO
@@ -22,6 +23,8 @@ def blob_dict_to_df(my_ordered_dict, filter_string):
     latest_file = list(filtered_dict.values())[0]
     blobstring = block_blob_service.get_blob_to_text(container_key, latest_file).content
     df = pd.read_csv(StringIO(blobstring),dtype=str)
+    df = df.replace(np.nan, '', regex=True)
+    df["initstate"] = df["finalresult"].map(lambda x: "0" if "no" in x else "2")
     #logging.warning(df.head())
     return df
 
