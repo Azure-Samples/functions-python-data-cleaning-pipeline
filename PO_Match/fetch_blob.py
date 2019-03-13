@@ -23,7 +23,7 @@ def blob_dict_to_df(my_ordered_dict, filter_string):
     #logging.warning(df.head())
     return df
 
-def blob_to_dict(*args):
+def blob_to_dict(batchId,*args):
     # add containers to list
     container_list = []
     arg_len = (len(args))
@@ -40,9 +40,10 @@ def blob_to_dict(*args):
         generator = block_blob_service.list_blobs(container)
         logging.warning(list(generator))
         for file in generator:
-            file_names.append(file.name)
-            logging.info(file_names[ii]) 
-            ii = ii+1
+            if batchId in file.name:
+                file_names.append(file.name)
+                logging.info(file_names[ii]) 
+                ii = ii+1
     # Merge the two lists to create a dictionary
     container_file_dict  = collections.OrderedDict()
     container_file_dict = dict(zip(container_list,file_names))

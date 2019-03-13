@@ -25,15 +25,19 @@ out_blob_pomatch = os.getenv("OutBlobPoMatchFormatted")
 out_blob_final = os.getenv("OutBlobFinal")
 # Clean blob flow from event grid events
 # This function will call all the other functions in clean.py
-def clean(req_body):
-    MTU_df, GE_df = fetch_blobs(out_blob_container_name,out_blob_container_ge_name)
+
+def clean(ge_file_url,customer_file_url,batch_id):
+    ge_file_container_name = ge_file_url.rsplit('/', 2)[-2]
+    customer_file_container_name = customer_file_url.rsplit('/', 2)[-2]
+    logging.info(ge_file_container_name)
+    MTU_df, GE_df = fetch_blobs(batch_id,customer_file_container_name,ge_file_container_name)
     cleaned_df = determine_PO_format(MTU_df, GE_df)
     result = final_reconciliation(cleaned_df, GE_df)
     return 'Success'
 
-def fetch_blobs(out_blob_container_name,out_blob_container_ge_name):
+def fetch_blobs(batch_id,customer_file_container_name,ge_file_container_name):
     # Create container & blob dictionary with helper function
-    blob_dict = fetching_service.blob_to_dict(out_blob_container_name, out_blob_container_ge_name)
+    blob_dict = fetching_service.blob_to_dict(batch_id,customer_file_container_name, ge_file_container_name)
     
     # create GE DF
     filter_string = 'ge'
