@@ -1,31 +1,65 @@
-# Blob - Event Grid Subscription - Python Function Pattern
+---
+topic: sample
+languages:
+    - python
+products:
+    - azure-functions
+    - azure-storage
+author: priyaananthasankar
+---
 
-This sample demonstrates a common pattern of blob to event grid to python functions architecture. This architecture represents a common Machine learning pipeline where
-we see raw data uploaded to a blob which fires an event into Azure Event Grid, that is connected to a Python function, which uses pandas to clean data and  other libraries to preprocess data for ML training/inference purposes.
+# Data Cleaning Pipeline
 
-# Azure Resources
+This sample demonstrates a data cleaning pipeline with Azure Functions written in Python triggered off a HTTP event from Event Grid to perform some pandas cleaning and reconciliation of CSV files.
+Using this sample we demonstrate a real use case where this is used to perform cleaning tasks.
 
-- Azure Function V2 on Linux Consumption Plan with two HttpTriggers
-- Azure Storage V2 with two containers, raw and clean
-- Azure Event Grid Subscription from Blob Storage with advanced subject filters
+# Getting Started
 
-# Steps to get this sample working in your subscription
+## Deploy to Azure
 
-## Prerequisites
-- Install Azure CLI Latest
-- Install Functions Core Tools and other prerequisites for functions to run
+### Prerequisites
 
-## Steps (Note: TODO, convert steps into a script)
-- az login
-- Provide names for params in azuredeploy.parameters.json. If the name is not unique deployments can fail (TODO: autogenerate names to avoid conflicts)
-- Create Resource group in Azure
-- az group deployment create -g <Resource Group Name> --template-file azure-deploy-linux-app-plan.json
-- Deploy your function app using func azure functionapp publish `functionappname` from previous step
-- az group deployment create -g <Resource Group Name> --template-file azure-deploy-event-grid-subscription.json
+- Install Python 3.6+
+- Install [Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2)
+- Install Docker
+- Note: If run on Windows, use Ubuntu WSL to run deploy script
 
-# Test Sample
+### Steps
 
-- Drop a txt file into "raw" container in your deployed Azure Storage
-- Check the "cleaned" container in your deployed Azure Storage for the same file with extension filename_cleaned.fileextension
+- Click Deploy to Azure Button to deploy resources
+
+[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
+
+or
+
+- Deploy through Azure CLI
+    - Open AZ CLI and run `az group create -l [region] -n [resourceGroupName]` to create a resource group in your Azure subscription (i.e. [region] could be westus2, eastus, etc.)
+    - Run `az group deployment create --name [deploymentName] --resource-group [resourceGroupName] --template-file azuredeploy.json`
+
+- Deploy Function App
+  - [Create/Activate virtual environment](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-function-python#create-and-activate-a-virtual-environment)
+  - Run `func azure functionapp publish [functionAppName] --build-native-deps` 
+
+## Test
+
+- Upload s1.csv file into c1raw container
+- Watch event grid trigger the CleanTrigger1 function and produce a "cleaned_s1_raw.csv"
+- Repeat the same for s2.csv into c2raw container
+- Now send the following HTTP request to the Reconcile function to merge
+
+```
+{
+	"file_1_url" : "https://{storagename}.blob.core.windows.net/c1raw/cleaned_s1_raw.csv",
+	"file_2_url" : "https://{storagename}.blob.core.windows.net/c2raw/cleaned_s2_raw.csv",
+	"batchId" : "1122"
+}
+
+```
+- Watch it produce final.csv file 
+- Can use a logic app to call the reconcile method with batch id's
+
+# References
+
+- [Create your first Python Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-function-python)
 
 
