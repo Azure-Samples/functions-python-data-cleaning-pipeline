@@ -4,8 +4,6 @@ import azure.functions as func
 from . import clean as cleaning_service
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    # This will output to postman
-    logging.info('Python HTTP trigger function processed a request.')
     req_body = req.get_json()
 
     if is_validation_event(req_body):

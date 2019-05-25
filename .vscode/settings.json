@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "worker_env/bin/python",
+    "azureFunctions.deploySubpath": "functions-python-data-cleaning-pipeline.zip",
+    "azureFunctions.pythonVenv": "worker_env",
+    "azureFunctions.projectLanguage": "Python",
+    "azureFunctions.projectRuntime": "~2",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.preDeployTask": "func: pack"
+}

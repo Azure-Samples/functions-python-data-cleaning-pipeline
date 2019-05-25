@@ -20,7 +20,6 @@ def blob_dict_to_df(my_ordered_dict, filter_string):
     latest_file = list(filtered_dict.values())[0]
     blobstring = block_blob_service.get_blob_to_text(container_key, latest_file).content
     df = pd.read_csv(StringIO(blobstring),dtype=str)
-    #logging.warning(df.head())
     return df
 
 def blob_to_dict(batchId,*args):
@@ -40,13 +39,10 @@ def blob_to_dict(batchId,*args):
         generator = block_blob_service.list_blobs(container)
         logging.warning(list(generator))
         for file in generator:
-            if batchId in file.name:
+            if "cleaned" in file.name:
                 file_names.append(file.name)
-                logging.info(file_names[ii]) 
                 ii = ii+1
     # Merge the two lists to create a dictionary
     container_file_dict  = collections.OrderedDict()
     container_file_dict = dict(zip(container_list,file_names))
-    #blob_dict_to_df(container_file_dict)
-    logging.warning(container_file_dict)
     return container_file_dict

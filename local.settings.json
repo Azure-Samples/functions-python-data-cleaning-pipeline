@@ -2,13 +2,11 @@
   "IsEncrypted": false,
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "BlobAccountName": "203014767teststorage",
-    "BlobAccountKey": "cvpAexnjHYd47ifmDpL9Yk9h/TRGWtLMqPAGIAY1LaEd0j0ylBsvu3VcuEuadj0n4Vg1axIUUJRcmtWfaf+F6A==",
-    "OutBlobContainerName": "mtucleaned",
-    "OutBlobContainerGEName": "gecleaned",
-    "OutBlobPoMatch": "pomatch",
-    "OutBlobPoMatchFormatted":"pomatchformatted",
-    "OutBlobFinal":"finalmatch"
+    "BlobAccountName": "geblob",
+    "BlobAccountKey": "bWEYuwQ7HwgACx3W3ZL+oS5kzGLSwH9nPW+oseKkgEGm0a7MApvBIwqi3TpNYlrIwTWVGBOsPLcWiauePkTJag==",
+    "C1": "c1raw",
+    "C2": "c2raw",
+    "FINAL" : "reconciled"
   },
   "ConnectionStrings": {}
 }

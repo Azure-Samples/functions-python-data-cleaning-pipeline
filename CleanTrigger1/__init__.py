@@ -19,7 +19,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         else:
             return func.HttpResponse("Bad Request", status_code=400)
 
-    else: # don't care about other events
+    else: 
         pass
 
 # Check for validation event from event grid
