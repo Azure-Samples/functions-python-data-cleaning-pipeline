@@ -1,0 +1,63 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "eventSubName1": {
+            "type": "string",
+            "defaultValue": "subToStorage1",
+            "metadata": {
+                "description": "Provide a name for the Event Grid subscription."
+            }
+        },
+        "eventSubName2": {
+            "type": "string",
+            "defaultValue": "subToStorage2",
+            "metadata": {
+                "description": "Provide a name for the Event Grid subscription."
+            }
+        },
+        "endpoint1": {
+            "type": "string",
+            "metadata": {
+                "description": "Provide the URL for the WebHook to receive events. Create your own endpoint for events."
+            }
+        },
+        "storageName": {
+            "type": "string",
+            "defaultValue": "203014767teststorage",
+            "metadata": {
+                "description": "Provide a name for the Event Grid subscription."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts/providers/eventSubscriptions",
+            "name": "[concat(parameters('storageName'), '/Microsoft.EventGrid/', parameters('eventSubName1'))]",
+            "apiVersion": "2018-01-01",
+            "properties": {
+                "destination": {
+                    "endpointType": "WebHook",
+                    "properties": {
+                        "endpointUrl": "[parameters('endpoint1')]"
+                    }
+                },
+                "filter": {
+                    "subjectBeginsWith": "",
+                    "subjectEndsWith": "",
+                    "isSubjectCaseSensitive": false,
+                    "includedEventTypes": [
+                        "All"
+                    ],
+                    "advancedFilters": [
+                        {
+                            "operatorType": "StringContains",
+                            "key": "Subject",
+                            "values": ["raw"]
+                          }
+                    ]
+                }
+            }
+        }
+    ]
+}

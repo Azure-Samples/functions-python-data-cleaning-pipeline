@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "functionapp1": {
+            "value": "203014767_func_app1"
+        },
+        "functionapp2":{
+            "value" : "203014767_func_app2"
+        },
+        "storageName":{
+            "value": "203014767teststorage"
+        },
+        "outputBlobContainerName":{
+            "value" : "203014767_Test_Blob"
+        },
+        "eventSubName1" : {
+            "value" : "203014767_event1"
+        },
+        "eventSubName2" : {
+            "value" : "203014767_event2"
+        },
+        "endpoint1" : {
+            "value" : "203014767_endpoint1"
+        }
+    }
+}

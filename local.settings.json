@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "BlobAccountName": "geblob",
+    "BlobAccountKey": "bWEYuwQ7HwgACx3W3ZL+oS5kzGLSwH9nPW+oseKkgEGm0a7MApvBIwqi3TpNYlrIwTWVGBOsPLcWiauePkTJag==",
+    "C1": "c1raw",
+    "C2": "c2raw",
+    "FINAL" : "reconciled"
+  },
+  "ConnectionStrings": {}
+}
