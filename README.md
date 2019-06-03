@@ -26,12 +26,6 @@ Using this sample we demonstrate a real use case where this is used to perform c
 
 ### Steps
 
-- Click Deploy to Azure Button to deploy resources
-
-[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
-
-or
-
 - Deploy through Azure CLI
     - Open AZ CLI and run `az group create -l [region] -n [resourceGroupName]` to create a resource group in your Azure subscription (i.e. [region] could be westus2, eastus, etc.)
     - Run `az group deployment create --name [deploymentName] --resource-group [resourceGroupName] --template-file azuredeploy.json`

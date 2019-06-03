@@ -43,6 +43,17 @@ def blob_to_dict(batchId,*args):
                 file_names.append(file.name)
                 ii = ii+1
     # Merge the two lists to create a dictionary
-    container_file_dict  = collections.OrderedDict()
-    container_file_dict = dict(zip(container_list,file_names))
+    # container_file_dict  = collections.OrderedDict()
+    # container_file_dict = dict(zip(container_list,file_names))
+    c1_list = [f for f in file_names if batchId + "_c1" in f]
+    c2_list = [f for f in file_names if batchId + "_c2" in f]
+
+    for c in container_list:
+        if "c1" in c:
+            c1_name = c
+        else:
+            c2_name = c
+    container_file_dict = {}
+    container_file_dict[c1_name] = c1_list[0]
+    container_file_dict[c2_name] = c2_list[0]
     return container_file_dict
