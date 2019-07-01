@@ -5,24 +5,28 @@ import pandas as pd
 from azure.storage.blob import ContentSettings
 from azure.storage.blob import BlockBlobService
 from io import StringIO
-#kill $(lsof -t -i :7071)
+# kill $(lsof -t -i :7071)
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
 block_blob_service = BlockBlobService(account_name=blob_account_name,
                                       account_key=blob_account_key)
 
+
 def blob_dict_to_df(my_ordered_dict, filter_string):
     logging.warning('blob_dict_to_df')
-    filtered_dict = {k:v for k,v in my_ordered_dict.items() if filter_string in k}
+    filtered_dict = {k: v for k, v in my_ordered_dict.items()
+                     if filter_string in k}
     logging.warning(filtered_dict)
     container_key = list(filtered_dict.keys())[0]
     latest_file = list(filtered_dict.values())[0]
-    blobstring = block_blob_service.get_blob_to_text(container_key, latest_file).content
-    df = pd.read_csv(StringIO(blobstring),dtype=str)
+    blobstring = block_blob_service.get_blob_to_text(
+        container_key, latest_file).content
+    df = pd.read_csv(StringIO(blobstring), dtype=str)
     return df
 
-def blob_to_dict(batchId,*args):
+
+def blob_to_dict(batchId, *args):
     # add containers to list
     container_list = []
     arg_len = (len(args))

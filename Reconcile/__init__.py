@@ -3,6 +3,7 @@ import json
 import azure.functions as func
 from . import clean as cleaning_service
 
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     # This will output to postman
     logging.info('Python HTTP trigger function processed a request.')
@@ -14,5 +15,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except:
         return func.HttpResponse("Bad Request", status_code=400)
 
-    result = cleaning_service.clean(f1_url,f2_url,batch_id)
-    return func.HttpResponse(result,status_code=200)
+    result = cleaning_service.clean(f1_url, f2_url, batch_id)
+    return func.HttpResponse(result, status_code=200)
