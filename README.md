@@ -55,5 +55,3 @@ Using this sample we demonstrate a real use case where this is used to perform c
 # References
 
 - [Create your first Python Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-function-python)
-
-
