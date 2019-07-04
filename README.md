@@ -1,11 +1,11 @@
 ---
 topic: sample
+description: "This sample demonstrates a data cleaning pipeline with Azure Functions written in Python."
 languages:
-    - python
+- python
 products:
-    - azure-functions
-    - azure-storage
-author: priyaananthasankar
+- azure-functions
+- azure-storage
 ---
 
 # Data Cleaning Pipeline
