@@ -1,5 +1,5 @@
 ---
-topic: sample
+page_type: sample
 description: "This sample demonstrates a data cleaning pipeline with Azure Functions written in Python."
 languages:
 - python
