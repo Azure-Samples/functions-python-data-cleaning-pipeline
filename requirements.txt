@@ -8,7 +8,7 @@ azure-storage-common==1.4.0
 certifi==2018.11.29
 cffi==1.11.5
 chardet==3.0.4
-cryptography==2.5
+cryptography==3.2
 cycler==0.10.0
 grpcio==1.14.2
 grpcio-tools==1.14.2
