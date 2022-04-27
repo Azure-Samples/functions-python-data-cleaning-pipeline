@@ -3,15 +3,16 @@ import os
 import collections
 import pandas as pd
 import numpy as np
-from azure.storage.blob import ContentSettings
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob import BlobServiceClient
 from io import StringIO
 #kill $(lsof -t -i :7071)
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
-block_blob_service = BlockBlobService(account_name=blob_account_name,
-                                      account_key=blob_account_key)
+blob_service_client = BlobServiceClient(
+    account_url=f"https://{blob_account_name}.blob.core.windows.net",
+    credential={"account_name": f"{blob_account_name}", "account_key":f"{blob_account_key}"}
+    )
 
 def blob_dict_to_df(my_ordered_dict, filter_string):
     logging.warning('blob_dict_to_df')
@@ -21,7 +22,8 @@ def blob_dict_to_df(my_ordered_dict, filter_string):
     logging.warning(filtered_dict)
     container_key = list(filtered_dict.keys())[0]
     latest_file = list(filtered_dict.values())[0]
-    blobstring = block_blob_service.get_blob_to_text(container_key, latest_file).content
+    container_client = blob_service_client.get_container_client(container=container_key)
+    blobstring = container_client.download_blob(blob=latest_file).readall().decode('UTF-8')
     df = pd.read_csv(StringIO(blobstring),dtype=str)
     df = df.replace(np.nan, '', regex=True)
     df["initstate"] = df["finalresult"].map(lambda x: "0" if "no" in x else "2")
@@ -42,8 +44,10 @@ def blob_to_dict(*args):
     file_names = []
     for container in container_list:
         logging.warning('FOR LOOP')
-        generator = block_blob_service.list_blobs(container)
+        container_client = blob_service_client.get_container_client(container)
+        generator = container_client.list_blobs()
         logging.warning(list(generator))
+        generator = container_client.list_blobs()
         for file in generator:
             file_names.append(file.name)
             logging.info(file_names[ii]) 
