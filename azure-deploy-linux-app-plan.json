@@ -22,14 +22,6 @@
             "defaultValue": "WestUSLinuxDynamicPlan",
             "type": "String"
         },
-        "siteName1": {
-            "defaultValue": "customerendpointdh1.azurewebsites.net",
-            "type": "String"
-        },
-        "siteName2": {
-            "defaultValue": "customerendpointdh2.azurewebsites.net",
-            "type": "String"
-        },
         "outputBlobContainerName" : {
             "defaultValue": "cleaned",
             "type": "String"
@@ -38,7 +30,9 @@
     "variables": {
         "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageName'))]",
         "container1" : "raw",
-        "container2" : "cleaned"
+        "container2" : "cleaned",
+        "siteName1" : "[concat(parameters('functionapp1'),'.azurewebsites.net')]",
+        "siteName2" : "[concat(parameters('functionapp2'),'.azurewebsites.net')]"
     },
     "resources": [
         {
@@ -202,7 +196,7 @@
         },
         {
             "type": "Microsoft.Web/sites/hostNameBindings",
-            "name": "[concat(parameters('functionapp1'), '/', parameters('siteName1'))]",
+            "name": "[concat(parameters('functionapp1'), '/', variables('siteName1'))]",
             "apiVersion": "2016-08-01",
             "location": "West US",
             "properties": {
