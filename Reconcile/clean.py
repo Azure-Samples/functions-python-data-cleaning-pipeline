@@ -1,16 +1,18 @@
 import logging
 import os
 import pandas as pd
-from azure.storage.blob import ContentSettings
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob import BlobServiceClient
 from io import StringIO
 from . import fetch_blob as fetching_service
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
-block_blob_service = BlockBlobService(account_name=blob_account_name,
-                                      account_key=blob_account_key)
+blob_service_client = BlobServiceClient(
+    account_url=f"https://{blob_account_name}.blob.core.windows.net",
+    credential={"account_name": f"{blob_account_name}", "account_key":f"{blob_account_key}"}
+    )
 out_blob_container_name = os.getenv("FINAL")
+container_client = blob_service_client.get_container_client(container=out_blob_container_name)
 
 # Clean blob flow from event grid events
 # This function will call all the other functions in clean.py
@@ -38,5 +40,5 @@ def fetch_blobs(batch_id,file_2_container_name,file_1_container_name):
 def final_reconciliation(f2_df, f1_df,batch_id):  
     outcsv = f2_df.to_csv(index=False)
     cleaned_blob_file_name = "reconciled_" + batch_id
-    block_blob_service.create_blob_from_text(out_blob_container_name, cleaned_blob_file_name, outcsv)
+    container_client.upload_blob(name=cleaned_blob_file_name, data=outcsv)
     return "Success"

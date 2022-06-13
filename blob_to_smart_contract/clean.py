@@ -5,8 +5,7 @@ import json
 import numpy as np
 import os
 import pandas as pd
-from azure.storage.blob import ContentSettings
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob import BlobServiceClient
 from io import StringIO
 from adal import AuthenticationContext
 from . import fetch_blob as fetching_service
@@ -25,9 +24,12 @@ from . import fetch_blob as fetching_service
 #%%
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
-block_blob_service = BlockBlobService(account_name=blob_account_name,
-                                      account_key=blob_account_key)
+blob_service_client = BlobServiceClient(
+    account_url=f"https://{blob_account_name}.blob.core.windows.net",
+    credential={"account_name": f"{blob_account_name}", "account_key":f"{blob_account_key}"}
+    )
 out_blob_final = os.getenv("OutBlobFinal")
+container_client = blob_service_client.get_container_client(container=out_blob_final)
 #%%
 AUTHORITY = 'https://login.microsoftonline.com/gemtudev.onmicrosoft.com'
 
@@ -139,7 +141,7 @@ def create_json_blob(json_array):
     #myarray = np.asarray(json_array).tolist()
     myarray = pd.Series(json_array).to_json(orient='values')
     blob_file_name = "df_to_json.json"
-    block_blob_service.create_blob_from_text(out_blob_final, blob_file_name, myarray)
+    container_client.upload_blob(name=blob_file_name, data=myarray)
     return 'Success'
 #%%
 #testPayload3b = json.dumps(testPayload3)

@@ -28,11 +28,14 @@ Using this sample we demonstrate a real use case where this is used to perform c
 
 - Deploy through Azure CLI
     - Open AZ CLI and run `az group create -l [region] -n [resourceGroupName]` to create a resource group in your Azure subscription (i.e. [region] could be westus2, eastus, etc.)
-    - Run `az group deployment create --name [deploymentName] --resource-group [resourceGroupName] --template-file azuredeploy.json`
+    - Run `az deployment group create --name [deploymentName] --resource-group [resourceGroupName] --template-file azure-deploy-linux-app-plan.json`
 
 - Deploy Function App
   - [Create/Activate virtual environment](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-function-python#create-and-activate-a-virtual-environment)
-  - Run `func azure functionapp publish [functionAppName] --build-native-deps` 
+  - Run `func azure functionapp publish [functionAppName] --build-native-deps`
+
+- Deploy through Azure CLI
+  - Run `az group deployment create -g resource_group_name --template-file azure-deploy-event-grid-subscription.json`
 
 ### Test
 

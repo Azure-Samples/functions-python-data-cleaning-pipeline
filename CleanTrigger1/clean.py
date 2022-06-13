@@ -1,19 +1,20 @@
 import logging
 import os
 import pandas as pd
-from azure.storage.blob import ContentSettings
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob import BlobServiceClient
 from io import StringIO
 
 blob_account_name = os.getenv("BlobAccountName")
 blob_account_key = os.getenv("BlobAccountKey")
-block_blob_service = BlockBlobService(account_name=blob_account_name,
-                                      account_key=blob_account_key)
+blob_service_client = BlobServiceClient(
+    account_url=f"https://{blob_account_name}.blob.core.windows.net",
+    credential={"account_name": f"{blob_account_name}", "account_key":f"{blob_account_key}"}
+    )
 out_blob_container_name = os.getenv("C1")
 
 def clean(req_body):
     blob_obj,filename = extract_blob_props(req_body[0]['data']['url']  )
-    df = pd.read_csv(StringIO(blob_obj.content))
+    df = pd.read_csv(StringIO(blob_obj.readall().decode('UTF-8')))
     result = clean_blob(df,filename)
     return result
 
@@ -24,7 +25,8 @@ def extract_blob_props(url):
     in_container_name = url.rsplit('/',2)[-2]
 
     # remove file extension from blob name
-    readblob = block_blob_service.get_blob_to_text(in_container_name,blob_file_name)                       
+    container_client = blob_service_client.get_container_client(container=in_container_name)
+    readblob = container_client.download_blob(blob=blob_file_name)
     return readblob, blob_file_name
 
 def clean_blob(df, blob_file_name):
@@ -37,5 +39,6 @@ def clean_blob(df, blob_file_name):
     outcsv = df2.to_csv(index=False)
 
     cleaned_blob_file_name = "cleaned_" +blob_file_name
-    block_blob_service.create_blob_from_text(out_blob_container_name, cleaned_blob_file_name, outcsv)
+    container_client = blob_service_client.get_container_client(container=out_blob_container_name)
+    container_client.upload_blob(cleaned_blob_file_name, outcsv)
     return "Success"
