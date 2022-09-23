@@ -20,7 +20,7 @@ matplotlib==3.0.2
 mccabe==0.6.1
 numpy==1.16.1
 pandas==0.24.1
-protobuf==3.6.1
+protobuf==3.18.3
 ptvsd==4.2.3
 pycparser==2.19
 pylint==2.2.2
